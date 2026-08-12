@@ -186,27 +186,25 @@ public:
         if (!db.open()) { if (err) *err = db.lastError().text(); return false; }
         db.exec("PRAGMA journal_mode=WAL");
         db.exec("PRAGMA synchronous=NORMAL");
-        const char *schema =
-            "CREATE TABLE IF NOT EXISTS tokens(id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            " word TEXT UNIQUE NOT NULL, freq REAL DEFAULT 0, ends REAL DEFAULT 0);"
-            "CREATE TABLE IF NOT EXISTS trans(id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            " a INTEGER NOT NULL, b INTEGER NOT NULL, c INTEGER NOT NULL,"
-            " w REAL DEFAULT 1, UNIQUE(a,b,c));"
-            "CREATE INDEX IF NOT EXISTS idx_trans_ab ON trans(a,b);"
-            "CREATE INDEX IF NOT EXISTS idx_trans_b ON trans(b);"
-            "CREATE TABLE IF NOT EXISTS tmoods(token INTEGER NOT NULL,"
-            " mood INTEGER NOT NULL, w REAL DEFAULT 0, UNIQUE(token,mood));"
-            "CREATE TABLE IF NOT EXISTS sentences(id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            " text TEXT NOT NULL, source TEXT);"
-            "CREATE INDEX IF NOT EXISTS idx_sent_src ON sentences(source);"
-            "CREATE TABLE IF NOT EXISTS episodes(id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            " role TEXT, content TEXT, meta TEXT, ts TEXT);"
-            "CREATE TABLE IF NOT EXISTS entities(id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            " name TEXT UNIQUE NOT NULL, mentions INTEGER DEFAULT 1);"
-            "CREATE TABLE IF NOT EXISTS kv(k TEXT UNIQUE NOT NULL, v TEXT);";
-        if (!db.exec(schema).isActive() && db.lastError().isValid()) {
-            if (err) *err = db.lastError().text();
-            return false;
+
+        // Fix: Execute each CREATE statement separately
+        const QStringList schemas = {
+            "CREATE TABLE IF NOT EXISTS tokens(id INTEGER PRIMARY KEY AUTOINCREMENT, word TEXT UNIQUE NOT NULL, freq REAL DEFAULT 0, ends REAL DEFAULT 0)",
+            "CREATE TABLE IF NOT EXISTS trans(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER NOT NULL, b INTEGER NOT NULL, c INTEGER NOT NULL, w REAL DEFAULT 1, UNIQUE(a,b,c))",
+            "CREATE INDEX IF NOT EXISTS idx_trans_ab ON trans(a,b)",
+            "CREATE INDEX IF NOT EXISTS idx_trans_b ON trans(b)",
+            "CREATE TABLE IF NOT EXISTS tmoods(token INTEGER NOT NULL, mood INTEGER NOT NULL, w REAL DEFAULT 0, UNIQUE(token,mood))",
+            "CREATE TABLE IF NOT EXISTS sentences(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, source TEXT)",
+            "CREATE INDEX IF NOT EXISTS idx_sent_src ON sentences(source)",
+            "CREATE TABLE IF NOT EXISTS episodes(id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT, content TEXT, meta TEXT, ts TEXT)",
+            "CREATE TABLE IF NOT EXISTS entities(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, mentions INTEGER DEFAULT 1)",
+            "CREATE TABLE IF NOT EXISTS kv(k TEXT UNIQUE NOT NULL, v TEXT)"
+        };
+        for (const QString &sql : schemas) {
+            if (!db.exec(sql).isActive() && db.lastError().isValid()) {
+                if (err) *err = db.lastError().text();
+                return false;
+            }
         }
         loadCache();
         loadRecents();
