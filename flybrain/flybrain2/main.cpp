@@ -22,6 +22,8 @@
 
 //untested
 
+//based on https://github.com/snedea/flybrain/tree/main
+
 // ============================================================================
 // CORE ENGINE: Real Fly Connectome Simulator
 // ============================================================================
